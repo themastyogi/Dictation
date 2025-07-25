@@ -577,6 +577,51 @@
         hard: ['beautiful', 'wonderful', 'excitement', 'magnificent', 'extraordinary', 'imagination', 'celebration', 'fascinating', 'spectacular', 'incredible']
       };
 
+      // Show profile modal only for new signups (no Firestore doc)
+      async function checkAndShowProfileModal() {
+        if (!currentUser) return;
+        const docRef = db.collection('userData').doc(currentUser.uid);
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) {
+          // New user, show modal
+          document.getElementById('profileModal').style.display = 'flex';
+          // Clear fields
+          document.getElementById('profileName').value = '';
+          document.getElementById('profileAge').value = '';
+          document.getElementById('profileClass').value = '';
+          ["Boy", "Girl", "Other"].forEach(type => {
+            const radio = document.getElementById(`avatar${type}`);
+            if (radio) radio.checked = false;
+          });
+          setAvatarSelection('');
+        } else {
+          document.getElementById('profileModal').style.display = 'none';
+        }
+      }
+
+      // Allow opening profile modal manually (for future use)
+      function openProfileModalWithCurrentData() {
+        if (!currentUser) return;
+        db.collection('userData').doc(currentUser.uid).get().then(docSnap => {
+          const data = docSnap.data() || {};
+          document.getElementById('profileModal').style.display = 'flex';
+          document.getElementById('profileName').value = data.profileName || '';
+          document.getElementById('profileAge').value = data.profileAge || '';
+          document.getElementById('profileClass').value = data.profileClass || '';
+          if (data.profileAvatar) {
+            const radio = document.getElementById('avatar' + data.profileAvatar.charAt(0).toUpperCase() + data.profileAvatar.slice(1));
+            if (radio) radio.checked = true;
+            setAvatarSelection(data.profileAvatar);
+          } else {
+            ["Boy", "Girl", "Other"].forEach(type => {
+              const radio = document.getElementById(`avatar${type}`);
+              if (radio) radio.checked = false;
+            });
+            setAvatarSelection('');
+          }
+        });
+      }
+
       // Firebase Auth logic
       auth.onAuthStateChanged(user => {
         currentUser = user;
