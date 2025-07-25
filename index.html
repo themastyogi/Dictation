@@ -641,6 +641,7 @@
 
       // Firebase Auth logic
       auth.onAuthStateChanged(user => {
+        console.log('auth.onAuthStateChanged', user);
         currentUser = user;
         updateAuthUI();
         if (user) {
@@ -712,6 +713,7 @@
       // Save data to Firestore under user ID
       async function saveDataToCloud(words, scores) {
         if (!currentUser) return;
+        console.log('Saving to Firestore:', words, scores, 'for UID:', currentUser.uid);
         await db.collection("userData").doc(currentUser.uid).set({
           words: words,
           scores: scores
@@ -725,11 +727,13 @@
         const docSnap = await docRef.get();
         if (docSnap.exists) {
           const data = docSnap.data();
+          console.log('Loaded from Firestore:', data, 'for UID:', currentUser.uid);
           return {
             words: data.words || [],
             scores: data.scores || { correct: 0, total: 0, streak: 0, level: 1 }
           };
         } else {
+          console.log('No data found in Firestore for UID:', currentUser.uid);
           return {
             words: [],
             scores: { correct: 0, total: 0, streak: 0, level: 1 }
@@ -738,6 +742,7 @@
       }
 
       async function loadData() {
+        console.log('loadData called, currentUser:', currentUser);
         const data = await loadDataFromCloud();
         words = data.words;
         scores = data.scores;
@@ -747,6 +752,7 @@
       }
 
       function saveData() {
+        console.log('saveData called, currentUser:', currentUser);
         saveDataToCloud(words, scores);
       }
 
