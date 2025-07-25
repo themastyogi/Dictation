@@ -899,31 +899,60 @@
         setTimeout(() => { celebration.innerHTML = ''; }, 2000);
       }
 
-      // Event listeners
+      // ALL DOMContentLoaded logic in one place
       document.addEventListener('DOMContentLoaded', function() {
+        // Initial UI setup
         loadData();
         setupEventListeners();
         updateDisplay();
         updateScores();
-      });
 
-      // Make functions available globally for HTML onclick handlers
-      window.addWord = addWord;
-      window.setMode = setMode;
-      window.nextPracticeWord = nextPracticeWord;
-      window.speakWord = speakWord;
-      window.checkSpelling = checkSpelling;
-      window.getHint = getHint;
-      window.nextDictation = nextDictation;
-      window.hearWord = hearWord;
-      window.startQuiz = startQuiz;
-      window.checkQuizAnswer = checkQuizAnswer;
-      window.nextQuiz = nextQuiz;
-      window.addSampleWords = addSampleWords;
-      window.clearWords = clearWords;
+        // Avatar radio button click handlers
+        ["Boy", "Girl", "Other"].forEach(type => {
+          const radio = document.getElementById(`avatar${type}`);
+          if (radio) {
+            radio.addEventListener('change', function() {
+              setAvatarSelection(type.toLowerCase());
+            });
+          }
+        });
 
-      // Admin Dashboard logic
-      document.addEventListener('DOMContentLoaded', function() {
+        // Profile form submission
+        const profileForm = document.getElementById('profileForm');
+        if (profileForm) {
+          profileForm.onsubmit = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const profileName = document.getElementById('profileName').value.trim();
+            const profileAge = document.getElementById('profileAge').value.trim();
+            const profileClass = document.getElementById('profileClass').value;
+            let profileAvatar = '';
+            if (document.getElementById('avatarBoy').checked) profileAvatar = 'boy';
+            if (document.getElementById('avatarGirl').checked) profileAvatar = 'girl';
+            if (document.getElementById('avatarOther').checked) profileAvatar = 'other';
+            if (!profileAvatar) {
+              alert('Please select an avatar.');
+              return;
+            }
+            await db.collection('userData').doc(currentUser.uid).set({
+              profileName, profileAge, profileClass, profileAvatar
+            }, { merge: true });
+            document.getElementById('profileModal').style.display = 'none';
+            loadData();
+            checkAndShowProfileModal();
+          };
+        }
+
+        // X button for profile modal
+        const closeProfileModalBtn = document.getElementById('closeProfileModal');
+        if (closeProfileModalBtn) {
+          closeProfileModalBtn.onclick = function(e) {
+            e.preventDefault();
+            document.getElementById('profileModal').style.display = 'none';
+          };
+        }
+
+        // Admin Dashboard logic
         const adminBtn = document.getElementById('adminDashboardBtn');
         const adminModal = document.getElementById('adminDashboardModal');
         const closeAdmin = document.getElementById('closeAdminDashboard');
@@ -970,116 +999,13 @@
             if (e.target === adminModal) adminModal.style.display = 'none';
           };
         }
-      });
 
-      // Show profile modal only for new signups (no Firestore doc)
-      async function checkAndShowProfileModal() {
-        if (!currentUser) return;
-        const docRef = db.collection('userData').doc(currentUser.uid);
-        const docSnap = await docRef.get();
-        if (!docSnap.exists) {
-          // New user, show modal
-          document.getElementById('profileModal').style.display = 'flex';
-          // Clear fields
-          document.getElementById('profileName').value = '';
-          document.getElementById('profileAge').value = '';
-          document.getElementById('profileClass').value = '';
-          ["Boy", "Girl", "Other"].forEach(type => {
-            const radio = document.getElementById(`avatar${type}`);
-            if (radio) radio.checked = false;
-          });
-          setAvatarSelection('');
-        } else {
-          document.getElementById('profileModal').style.display = 'none';
-        }
-      }
-
-      // Allow opening profile modal manually (for future use)
-      function openProfileModalWithCurrentData() {
-        if (!currentUser) return;
-        db.collection('userData').doc(currentUser.uid).get().then(docSnap => {
-          const data = docSnap.data() || {};
-          document.getElementById('profileModal').style.display = 'flex';
-          document.getElementById('profileName').value = data.profileName || '';
-          document.getElementById('profileAge').value = data.profileAge || '';
-          document.getElementById('profileClass').value = data.profileClass || '';
-          if (data.profileAvatar) {
-            const radio = document.getElementById('avatar' + data.profileAvatar.charAt(0).toUpperCase() + data.profileAvatar.slice(1));
-            if (radio) radio.checked = true;
-            setAvatarSelection(data.profileAvatar);
-          } else {
-            ["Boy", "Girl", "Other"].forEach(type => {
-              const radio = document.getElementById(`avatar${type}`);
-              if (radio) radio.checked = false;
-            });
-            setAvatarSelection('');
-          }
-        });
-      }
-
-      // Profile form submission
-      document.addEventListener('DOMContentLoaded', function() {
-        const profileForm = document.getElementById('profileForm');
-        if (profileForm) {
-          profileForm.onsubmit = async function(e) {
-            e.preventDefault();
-            if (!currentUser) return;
-            const profileName = document.getElementById('profileName').value.trim();
-            const profileAge = document.getElementById('profileAge').value.trim();
-            const profileClass = document.getElementById('profileClass').value;
-            let profileAvatar = '';
-            if (document.getElementById('avatarBoy').checked) profileAvatar = 'boy';
-            if (document.getElementById('avatarGirl').checked) profileAvatar = 'girl';
-            if (document.getElementById('avatarOther').checked) profileAvatar = 'other';
-            if (!profileAvatar) {
-              alert('Please select an avatar.');
-              return;
-            }
-            await db.collection('userData').doc(currentUser.uid).set({
-              profileName, profileAge, profileClass, profileAvatar
-            }, { merge: true });
-            document.getElementById('profileModal').style.display = 'none';
-            loadData();
-            checkAndShowProfileModal();
-          };
-        }
-      });
-
-      // Avatar selection logic for profile modal
-      function setAvatarSelection(value) {
-        ["Boy", "Girl", "Other"].forEach(type => {
-          const icon = document.getElementById(`avatar${type}Icon`);
-          if (icon) {
-            if (value === type.toLowerCase()) {
-              icon.style.boxShadow = '0 0 0 4px #4ecdc4';
-              icon.style.background = '#e8f5e9';
-            } else {
-              icon.style.boxShadow = '';
-              icon.style.background = '';
-            }
-          }
-        });
-      }
-      document.addEventListener('DOMContentLoaded', function() {
-        // Avatar radio button click handlers
-        ["Boy", "Girl", "Other"].forEach(type => {
-          const radio = document.getElementById(`avatar${type}`);
-          if (radio) {
-            radio.addEventListener('change', function() {
-              setAvatarSelection(type.toLowerCase());
-            });
-          }
-        });
-      });
-
-      document.addEventListener('DOMContentLoaded', function() {
         // User menu dropdown logic (robust)
         const userMenuBtn = document.getElementById('userMenuBtn');
         const userMenuDropdown = document.getElementById('userMenuDropdown');
         const menuAdminDashboard = document.getElementById('menuAdminDashboard');
         const menuMyProfile = document.getElementById('menuMyProfile');
         const menuSignOut = document.getElementById('menuSignOut');
-        const loginBtn = document.getElementById('loginBtn');
         // Toggle dropdown on button click
         if (userMenuBtn && userMenuDropdown) {
           userMenuBtn.addEventListener('click', function(e) {
@@ -1125,8 +1051,8 @@
           });
         }
         // Hide old admin dashboard button
-        const adminBtn = document.getElementById('adminDashboardBtn');
-        if (adminBtn) adminBtn.style.display = 'none';
+        const adminBtn2 = document.getElementById('adminDashboardBtn');
+        if (adminBtn2) adminBtn2.style.display = 'none';
       });
     </script>
 </body>
