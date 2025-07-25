@@ -350,7 +350,21 @@
 <body>
     <div class="container">
         <div style="position: absolute; top: 18px; right: 30px; z-index: 2000;">
-            <span id="appVersion" style="background: #ff6b6b; color: #fff; padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); letter-spacing: 1px;">Version: v1.1.0</span>
+            <span id="appVersion" style="background: #ff6b6b; color: #fff; padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); letter-spacing: 1px;">Version: v1.2.0</span>
+        </div>
+        <div id="authSection" style="position: absolute; top: 60px; right: 30px; z-index: 2000;">
+            <span id="userInfo" style="margin-right: 10px; color: #333;"></span>
+            <button id="loginBtn" class="btn btn-secondary" style="padding: 6px 18px; font-size: 1rem;">Sign In</button>
+            <button id="logoutBtn" class="btn btn-warning" style="padding: 6px 18px; font-size: 1rem; display: none;">Sign Out</button>
+            <button id="adminDashboardBtn" class="btn btn-primary" style="padding: 6px 18px; font-size: 1rem; display: none; margin-left: 10px;">Admin Dashboard</button>
+        </div>
+        <!-- Admin Dashboard Modal -->
+        <div id="adminDashboardModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:3000; align-items:center; justify-content:center;">
+          <div style="background:#fff; border-radius:18px; max-width:900px; width:95vw; margin:40px auto; padding:30px 20px; box-shadow:0 8px 40px rgba(0,0,0,0.25); position:relative;">
+            <button id="closeAdminDashboard" style="position:absolute; top:18px; right:18px; background:#ff6b6b; color:#fff; border:none; border-radius:50%; width:36px; height:36px; font-size:1.3rem; cursor:pointer;">&times;</button>
+            <h2 style="margin-bottom:18px; color:#333;">Admin Dashboard</h2>
+            <div id="adminDashboardContent">Loading...</div>
+          </div>
         </div>
         <div class="header">
             <h1 class="title">🌟 Interactive Spelling Adventure 🌟</h1>
@@ -485,6 +499,7 @@
     <!-- Firebase compat CDN scripts for GitHub Pages compatibility -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script>
       // Firebase config and initialization
       const firebaseConfig = {
@@ -498,6 +513,8 @@
       };
       firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
+      const auth = firebase.auth();
+      let currentUser = null;
 
       // App state
       let words = [];
@@ -514,17 +531,64 @@
         hard: ['beautiful', 'wonderful', 'excitement', 'magnificent', 'extraordinary', 'imagination', 'celebration', 'fascinating', 'spectacular', 'incredible']
       };
 
-      // Save data to Firestore
+      // Firebase Auth logic
+      auth.onAuthStateChanged(user => {
+        currentUser = user;
+        updateAuthUI();
+        if (user) {
+          loadData();
+          // Show admin dashboard button if admin
+          if (user.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2") {
+            document.getElementById('adminDashboardBtn').style.display = '';
+          } else {
+            document.getElementById('adminDashboardBtn').style.display = 'none';
+          }
+        } else {
+          words = [];
+          scores = { correct: 0, total: 0, streak: 0, level: 1 };
+          updateWordList();
+          updateDisplay();
+          updateScores();
+          document.getElementById('adminDashboardBtn').style.display = 'none';
+        }
+      });
+
+      function updateAuthUI() {
+        const userInfo = document.getElementById('userInfo');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (currentUser) {
+          userInfo.textContent = `Hello, ${currentUser.displayName || currentUser.email}`;
+          loginBtn.style.display = 'none';
+          logoutBtn.style.display = '';
+        } else {
+          userInfo.textContent = '';
+          loginBtn.style.display = '';
+          logoutBtn.style.display = 'none';
+        }
+      }
+
+      document.getElementById('loginBtn').onclick = function() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider);
+      };
+      document.getElementById('logoutBtn').onclick = function() {
+        auth.signOut();
+      };
+
+      // Save data to Firestore under user ID
       async function saveDataToCloud(words, scores) {
-        await db.collection("userData").doc("main").set({
+        if (!currentUser) return;
+        await db.collection("userData").doc(currentUser.uid).set({
           words: words,
           scores: scores
         });
       }
 
-      // Load data from Firestore
+      // Load data from Firestore under user ID
       async function loadDataFromCloud() {
-        const docRef = db.collection("userData").doc("main");
+        if (!currentUser) return { words: [], scores: { correct: 0, total: 0, streak: 0, level: 1 } };
+        const docRef = db.collection("userData").doc(currentUser.uid);
         const docSnap = await docRef.get();
         if (docSnap.exists) {
           const data = docSnap.data();
@@ -792,6 +856,44 @@
       window.nextQuiz = nextQuiz;
       window.addSampleWords = addSampleWords;
       window.clearWords = clearWords;
+
+      // Admin Dashboard logic
+      document.addEventListener('DOMContentLoaded', function() {
+        const adminBtn = document.getElementById('adminDashboardBtn');
+        const adminModal = document.getElementById('adminDashboardModal');
+        const closeAdmin = document.getElementById('closeAdminDashboard');
+        if (adminBtn && adminModal && closeAdmin) {
+          adminBtn.onclick = async function() {
+            adminModal.style.display = 'flex';
+            document.getElementById('adminDashboardContent').innerHTML = 'Loading...';
+            // Fetch all user data
+            try {
+              const snapshot = await db.collection('userData').get();
+              if (snapshot.empty) {
+                document.getElementById('adminDashboardContent').innerHTML = '<div style="color:#888;">No user data found.</div>';
+                return;
+              }
+              let html = '<table style="width:100%; border-collapse:collapse;">';
+              html += '<tr style="background:#f5f5f5;"><th style="padding:8px; border-bottom:1px solid #ddd;">User ID</th><th style="padding:8px; border-bottom:1px solid #ddd;">Words</th><th style="padding:8px; border-bottom:1px solid #ddd;">Scores</th></tr>';
+              snapshot.forEach(doc => {
+                const data = doc.data();
+                html += `<tr><td style='padding:8px; border-bottom:1px solid #eee; word-break:break-all;'>${doc.id}</td><td style='padding:8px; border-bottom:1px solid #eee;'>${(data.words||[]).join(', ')}</td><td style='padding:8px; border-bottom:1px solid #eee;'>Correct: ${(data.scores?.correct)||0}, Attempts: ${(data.scores?.total)||0}, Streak: ${(data.scores?.streak)||0}, Level: ${(data.scores?.level)||1}</td></tr>`;
+              });
+              html += '</table>';
+              document.getElementById('adminDashboardContent').innerHTML = html;
+            } catch (e) {
+              document.getElementById('adminDashboardContent').innerHTML = '<div style="color:#e74c3c;">Error loading data.</div>';
+            }
+          };
+          closeAdmin.onclick = function() {
+            adminModal.style.display = 'none';
+          };
+          // Hide modal if clicking outside the box
+          adminModal.onclick = function(e) {
+            if (e.target === adminModal) adminModal.style.display = 'none';
+          };
+        }
+      });
     </script>
 </body>
 </html>
