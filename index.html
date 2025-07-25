@@ -371,7 +371,7 @@
 <body>
     <div class="container">
         <div class="top-controls">
-          <span id="appVersion" style="background: #ff6b6b; color: #fff; padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); letter-spacing: 1px; min-width: 120px; text-align: center;">Version: v1.3.6</span>
+          <span id="appVersion" style="background: #ff6b6b; color: #fff; padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); letter-spacing: 1px; min-width: 120px; text-align: center;">Version: v1.3.7</span>
           <span id="userInfo" style="color: #333; font-weight: bold;"></span>
           <button id="loginBtn" class="btn btn-secondary" style="padding: 6px 18px; font-size: 1rem;">Sign In</button>
           <button id="logoutBtn" class="btn btn-warning" style="padding: 6px 18px; font-size: 1rem; display: none;">Sign Out</button>
@@ -978,8 +978,7 @@
 
       // ALL DOMContentLoaded logic in one place
       document.addEventListener('DOMContentLoaded', function() {
-        // Initial UI setup
-        loadData();
+        // Initial UI setup (do NOT call loadData here)
         setupEventListeners();
         updateDisplay();
         updateScores();
