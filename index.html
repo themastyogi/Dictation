@@ -350,7 +350,7 @@
 <body>
     <div class="container">
         <div style="position: absolute; top: 18px; right: 30px; z-index: 2000;">
-            <span id="appVersion" style="background: #ff6b6b; color: #fff; padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); letter-spacing: 1px;">Version: v1.2.0</span>
+            <span id="appVersion" style="background: #ff6b6b; color: #fff; padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); letter-spacing: 1px;">Version: v1.3.0</span>
         </div>
         <div id="authSection" style="position: absolute; top: 60px; right: 30px; z-index: 2000;">
             <span id="userInfo" style="margin-right: 10px; color: #333;"></span>
@@ -365,6 +365,40 @@
             <h2 style="margin-bottom:18px; color:#333;">Admin Dashboard</h2>
             <div id="adminDashboardContent">Loading...</div>
           </div>
+        </div>
+        <!-- Profile Modal for user details -->
+        <div id="profileModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:4000; align-items:center; justify-content:center;">
+          <form id="profileForm" style="background:#fff; border-radius:18px; max-width:400px; width:95vw; margin:40px auto; padding:30px 20px; box-shadow:0 8px 40px rgba(0,0,0,0.25); position:relative;">
+            <h2 style="margin-bottom:18px; color:#333;">Complete Your Profile</h2>
+            <label>Name:<br><input type="text" id="profileName" required style="width:100%;margin-bottom:10px;"></label><br>
+            <label>Age:<br><input type="number" id="profileAge" min="3" max="18" required style="width:100%;margin-bottom:10px;"></label><br>
+            <label>Class:<br>
+              <select id="profileClass" required style="width:100%;margin-bottom:10px;">
+                <option value="">Select Class</option>
+                <option value="Nursery">Nursery</option>
+                <option value="KG">KG</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+              </select>
+            </label><br>
+            <label>Avatar:<br>
+              <select id="profileAvatar" required style="width:100%;margin-bottom:10px;">
+                <option value="">Select Avatar</option>
+                <option value="boy">Boy 👦</option>
+                <option value="girl">Girl 👧</option>
+                <option value="other">Other 🧑</option>
+              </select>
+            </label><br>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Save Profile</button>
+          </form>
         </div>
         <div class="header">
             <h1 class="title">🌟 Interactive Spelling Adventure 🌟</h1>
@@ -536,7 +570,14 @@
         currentUser = user;
         updateAuthUI();
         if (user) {
+          // Save user info to Firestore (merge, do not overwrite words/scores)
+          db.collection('userData').doc(user.uid).set({
+            email: user.email || '',
+            displayName: user.displayName || '',
+            photoURL: user.photoURL || ''
+          }, { merge: true });
           loadData();
+          checkAndShowProfileModal();
           // Show admin dashboard button if admin
           if (user.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2") {
             document.getElementById('adminDashboardBtn').style.display = '';
@@ -877,7 +918,19 @@
               html += '<tr style="background:#f5f5f5;"><th style="padding:8px; border-bottom:1px solid #ddd;">User ID</th><th style="padding:8px; border-bottom:1px solid #ddd;">Words</th><th style="padding:8px; border-bottom:1px solid #ddd;">Scores</th></tr>';
               snapshot.forEach(doc => {
                 const data = doc.data();
-                html += `<tr><td style='padding:8px; border-bottom:1px solid #eee; word-break:break-all;'>${doc.id}</td><td style='padding:8px; border-bottom:1px solid #eee;'>${(data.words||[]).join(', ')}</td><td style='padding:8px; border-bottom:1px solid #eee;'>Correct: ${(data.scores?.correct)||0}, Attempts: ${(data.scores?.total)||0}, Streak: ${(data.scores?.streak)||0}, Level: ${(data.scores?.level)||1}</td></tr>`;
+                html += `<tr>
+                  <td style='padding:8px; border-bottom:1px solid #eee; word-break:break-all;'>
+                    <div><strong>UID:</strong> ${doc.id}</div>
+                    <div><strong>Email:</strong> ${data.email || ''}</div>
+                    <div><strong>Name:</strong> ${data.displayName || ''}</div>
+                    <div><strong>Profile Name:</strong> ${data.profileName || ''}</div>
+                    <div><strong>Age:</strong> ${data.profileAge || ''}</div>
+                    <div><strong>Class:</strong> ${data.profileClass || ''}</div>
+                    <div><strong>Avatar:</strong> ${data.profileAvatar || ''}</div>
+                  </td>
+                  <td style='padding:8px; border-bottom:1px solid #eee;'>${(data.words||[]).join(', ')}</td>
+                  <td style='padding:8px; border-bottom:1px solid #eee;'>Correct: ${(data.scores?.correct)||0}, Attempts: ${(data.scores?.total)||0}, Streak: ${(data.scores?.streak)||0}, Level: ${(data.scores?.level)||1}</td>
+                </tr>`;
               });
               html += '</table>';
               document.getElementById('adminDashboardContent').innerHTML = html;
@@ -891,6 +944,44 @@
           // Hide modal if clicking outside the box
           adminModal.onclick = function(e) {
             if (e.target === adminModal) adminModal.style.display = 'none';
+          };
+        }
+      });
+
+      // Check and show profile modal if needed
+      async function checkAndShowProfileModal() {
+        if (!currentUser) return;
+        const docRef = db.collection('userData').doc(currentUser.uid);
+        const docSnap = await docRef.get();
+        const data = docSnap.data() || {};
+        if (!data.profileName || !data.profileAge || !data.profileClass || !data.profileAvatar) {
+          document.getElementById('profileModal').style.display = 'flex';
+          document.getElementById('profileName').value = data.profileName || '';
+          document.getElementById('profileAge').value = data.profileAge || '';
+          document.getElementById('profileClass').value = data.profileClass || '';
+          document.getElementById('profileAvatar').value = data.profileAvatar || '';
+        } else {
+          document.getElementById('profileModal').style.display = 'none';
+        }
+      }
+
+      // Profile form submission
+      document.addEventListener('DOMContentLoaded', function() {
+        const profileForm = document.getElementById('profileForm');
+        if (profileForm) {
+          profileForm.onsubmit = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const profileName = document.getElementById('profileName').value.trim();
+            const profileAge = document.getElementById('profileAge').value.trim();
+            const profileClass = document.getElementById('profileClass').value;
+            const profileAvatar = document.getElementById('profileAvatar').value;
+            await db.collection('userData').doc(currentUser.uid).set({
+              profileName, profileAge, profileClass, profileAvatar
+            }, { merge: true });
+            document.getElementById('profileModal').style.display = 'none';
+            loadData();
+            checkAndShowProfileModal();
           };
         }
       });
