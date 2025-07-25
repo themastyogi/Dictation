@@ -1051,59 +1051,21 @@
           });
         }
 
-        // User menu dropdown logic (robust)
+        // Minimal working dropdown logic at the very end of the script
         const userMenuBtn = document.getElementById('userMenuBtn');
         const userMenuDropdown = document.getElementById('userMenuDropdown');
-        const menuAdminDashboard = document.getElementById('menuAdminDashboard');
-        const menuMyProfile = document.getElementById('menuMyProfile');
-        const menuSignOut = document.getElementById('menuSignOut');
-        // Toggle dropdown on button click
         if (userMenuBtn && userMenuDropdown) {
           userMenuBtn.addEventListener('click', function(e) {
             e.stopPropagation();
-            if (userMenuDropdown.style.display === 'block') {
-              userMenuDropdown.style.display = 'none';
-            } else {
-              userMenuDropdown.style.display = 'block';
-            }
+            userMenuDropdown.style.display = userMenuDropdown.style.display === 'block' ? 'none' : 'block';
           });
-          // Prevent closing when clicking inside the dropdown
           userMenuDropdown.addEventListener('click', function(e) {
             e.stopPropagation();
           });
-          // Hide dropdown on click outside
           document.addEventListener('click', function() {
             userMenuDropdown.style.display = 'none';
           });
         }
-        // Admin Dashboard
-        if (menuAdminDashboard) {
-          menuAdminDashboard.addEventListener('click', function(e) {
-            e.preventDefault();
-            userMenuDropdown.style.display = 'none';
-            const adminBtn = document.getElementById('adminDashboardBtn');
-            if (adminBtn) adminBtn.click();
-          });
-        }
-        // My Profile
-        if (menuMyProfile) {
-          menuMyProfile.addEventListener('click', function(e) {
-            e.preventDefault();
-            userMenuDropdown.style.display = 'none';
-            openProfileModalWithCurrentData();
-          });
-        }
-        // Sign Out
-        if (menuSignOut) {
-          menuSignOut.addEventListener('click', function(e) {
-            e.preventDefault();
-            userMenuDropdown.style.display = 'none';
-            auth.signOut();
-          });
-        }
-        // Hide old admin dashboard button
-        const adminBtn2 = document.getElementById('adminDashboardBtn');
-        if (adminBtn2) adminBtn2.style.display = 'none';
       });
     </script>
 </body>
