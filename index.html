@@ -349,17 +349,13 @@
 </head>
 <body>
     <div class="container">
-        <div style="position: absolute; top: 18px; right: 30px; z-index: 2000; display: flex; flex-direction: column; align-items: flex-end;">
-          <div id="userMenuContainer" style="position: relative;">
-            <button id="userMenuBtn" style="display: none; background: #4ecdc4; color: #fff; font-weight: bold; font-size: 1.1rem; border: none; border-radius: 20px; padding: 10px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; min-width: 120px;">User</button>
-            <div id="userMenuDropdown" style="display: none; position: absolute; top: 110%; right: 0; background: #fff; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); min-width: 210px; padding: 0; overflow: hidden; z-index: 3000;">
-              <div id="menuVersion" style="padding: 14px 22px; color: #ff6b6b; font-weight: bold; font-size: 1.05rem; border-bottom: 1px solid #eee; background: #fff6f6; cursor: default;">Version: v1.3.4</div>
-              <button id="menuAdminDashboard" style="display:none; width:100%; text-align:left; padding: 12px 22px; background: none; border: none; font-size: 1rem; color: #e67e22; border-bottom: 1px solid #eee; cursor: pointer;">Admin Dashboard</button>
-              <button id="menuMyProfile" style="width:100%; text-align:left; padding: 12px 22px; background: none; border: none; font-size: 1rem; color: #2980b9; border-bottom: 1px solid #eee; cursor: pointer;">My Profile</button>
-              <button id="menuSignOut" style="width:100%; text-align:left; padding: 12px 22px; background: none; border: none; font-size: 1rem; color: #c0392b; cursor: pointer;">Sign Out</button>
-            </div>
-          </div>
+        <div style="position: absolute; top: 18px; right: 30px; z-index: 2000; display: flex; flex-direction: row; align-items: center; gap: 12px;">
+          <span id="appVersion" style="background: #ff6b6b; color: #fff; padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12); letter-spacing: 1px; min-width: 120px; text-align: center;">Version: v1.3.5</span>
+          <span id="userInfo" style="color: #333; font-weight: bold;"></span>
           <button id="loginBtn" class="btn btn-secondary" style="padding: 6px 18px; font-size: 1rem;">Sign In</button>
+          <button id="logoutBtn" class="btn btn-warning" style="padding: 6px 18px; font-size: 1rem; display: none;">Sign Out</button>
+          <button id="myProfileBtn" class="btn btn-info" style="padding: 6px 18px; font-size: 1rem; display: none; background: #4ecdc4; color: #fff;">My Profile</button>
+          <button id="adminDashboardBtn" class="btn btn-primary" style="padding: 6px 18px; font-size: 1rem; display: none;">Admin Dashboard</button>
         </div>
         <!-- Admin Dashboard Modal -->
         <div id="adminDashboardModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:3000; align-items:center; justify-content:center;">
@@ -657,30 +653,30 @@
 
       function updateAuthUI() {
         const loginBtn = document.getElementById('loginBtn');
-        const userMenuBtn = document.getElementById('userMenuBtn');
-        const userMenuDropdown = document.getElementById('userMenuDropdown');
-        const menuAdminDashboard = document.getElementById('menuAdminDashboard');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const myProfileBtn = document.getElementById('myProfileBtn');
+        const adminDashboardBtn = document.getElementById('adminDashboardBtn');
+        const userInfo = document.getElementById('userInfo');
         if (currentUser) {
-          // Get profile name if available
           db.collection('userData').doc(currentUser.uid).get().then(docSnap => {
             const data = docSnap.data() || {};
             let displayName = data.profileName || currentUser.displayName || currentUser.email || 'User';
-            if (userMenuBtn) userMenuBtn.textContent = displayName;
+            if (userInfo) userInfo.textContent = `Hello, ${displayName}`;
           });
           if (loginBtn) loginBtn.style.display = 'none';
-          if (userMenuBtn) userMenuBtn.style.display = '';
-          // Show admin dashboard in menu if admin
-          if (menuAdminDashboard) {
-            if (currentUser.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2") {
-              menuAdminDashboard.style.display = '';
-            } else {
-              menuAdminDashboard.style.display = 'none';
-            }
+          if (logoutBtn) logoutBtn.style.display = '';
+          if (myProfileBtn) myProfileBtn.style.display = '';
+          if (currentUser.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2" && adminDashboardBtn) {
+            adminDashboardBtn.style.display = '';
+          } else if (adminDashboardBtn) {
+            adminDashboardBtn.style.display = 'none';
           }
         } else {
+          if (userInfo) userInfo.textContent = '';
           if (loginBtn) loginBtn.style.display = '';
-          if (userMenuBtn) userMenuBtn.style.display = 'none';
-          if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+          if (logoutBtn) logoutBtn.style.display = 'none';
+          if (myProfileBtn) myProfileBtn.style.display = 'none';
+          if (adminDashboardBtn) adminDashboardBtn.style.display = 'none';
         }
       }
 
@@ -1051,54 +1047,31 @@
           });
         }
 
-        // Robust user menu dropdown and menu actions
-        const userMenuBtn = document.getElementById('userMenuBtn');
-        const userMenuDropdown = document.getElementById('userMenuDropdown');
-        const menuAdminDashboard = document.getElementById('menuAdminDashboard');
-        const menuMyProfile = document.getElementById('menuMyProfile');
-        const menuSignOut = document.getElementById('menuSignOut');
-        const adminBtn2 = document.getElementById('adminDashboardBtn');
+        // Attach button event listeners for top-right controls
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const myProfileBtn = document.getElementById('myProfileBtn');
+        const adminDashboardBtn = document.getElementById('adminDashboardBtn');
 
-        // Dropdown open/close logic
-        if (userMenuBtn && userMenuDropdown) {
-          userMenuBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userMenuDropdown.style.display = userMenuDropdown.style.display === 'block' ? 'none' : 'block';
-          });
-          userMenuDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-          });
-          document.addEventListener('click', function() {
-            userMenuDropdown.style.display = 'none';
+        if (loginBtn) {
+          loginBtn.addEventListener('click', function() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
           });
         }
-
-        // Menu actions
-        if (menuMyProfile) {
-          menuMyProfile.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', function() {
+            auth.signOut();
+          });
+        }
+        if (myProfileBtn) {
+          myProfileBtn.addEventListener('click', function() {
             if (typeof openProfileModalWithCurrentData === 'function') {
               openProfileModalWithCurrentData();
             }
           });
         }
-        if (menuSignOut) {
-          menuSignOut.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (userMenuDropdown) userMenuDropdown.style.display = 'none';
-            if (typeof auth !== 'undefined') {
-              auth.signOut();
-            }
-          });
-        }
-        if (menuAdminDashboard && adminBtn2) {
-          menuAdminDashboard.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (userMenuDropdown) userMenuDropdown.style.display = 'none';
-            adminBtn2.click();
-          });
-        }
+        // adminDashboardBtn is handled elsewhere for modal logic
       });
     </script>
 </body>
