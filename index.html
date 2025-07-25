@@ -551,31 +551,221 @@
       }
 
       // All your app logic and functions (addWord, setMode, etc.)
-      // ... (PASTE ALL YOUR EXISTING APP FUNCTIONS HERE, UNCHANGED) ...
-
-      // For brevity, only the function signatures are shown below. You must paste the full function bodies from your previous working code.
-      function setupEventListeners() { /* ... */ }
-      function setMode(mode) { /* ... */ }
-      function addWord() { /* ... */ }
-      function addSampleWords() { /* ... */ }
-      function clearWords() { /* ... */ }
-      function initPracticeMode() { /* ... */ }
-      function nextPracticeWord() { /* ... */ }
-      function speakWord() { /* ... */ }
-      function initDictationMode() { /* ... */ }
-      function hearWord() { /* ... */ }
-      function checkSpelling() { /* ... */ }
-      function getHint() { /* ... */ }
-      function nextDictation() { /* ... */ }
-      function initQuizMode() { /* ... */ }
-      function startQuiz() { /* ... */ }
-      function checkQuizAnswer() { /* ... */ }
-      function nextQuiz() { /* ... */ }
-      function updateDisplay() { /* ... */ }
-      function updateScores() { /* ... */ }
-      function updateWordList() { /* ... */ }
-      function playSound(type) { /* ... */ }
-      function showCelebration() { /* ... */ }
+      // FULL FUNCTION BODIES BELOW
+      function setupEventListeners() {
+        document.getElementById('wordInput').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') addWord();
+        });
+        document.getElementById('spellingInput').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') checkSpelling();
+        });
+        document.getElementById('quizInput').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') checkQuizAnswer();
+        });
+      }
+      function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+        });
+        updateDisplay();
+        if (mode === 'practice') initPracticeMode();
+        if (mode === 'dictation') initDictationMode();
+        if (mode === 'quiz') initQuizMode();
+      }
+      function addWord() {
+        const input = document.getElementById('wordInput');
+        const word = input.value.trim();
+        if (word && !words.includes(word)) {
+          words.push(word);
+          input.value = '';
+          updateWordList();
+          saveData();
+        }
+      }
+      function addSampleWords() {
+        const allSamples = [...sampleWords.easy, ...sampleWords.medium, ...sampleWords.hard];
+        allSamples.forEach(word => {
+          if (!words.includes(word)) words.push(word);
+        });
+        updateWordList();
+        saveData();
+      }
+      function clearWords() {
+        words = [];
+        updateWordList();
+        saveData();
+      }
+      function initPracticeMode() {
+        if (words.length === 0) {
+          document.getElementById('practiceWord').textContent = 'Add some words to start!';
+          return;
+        }
+        currentIndex = 0;
+        document.getElementById('practiceWord').textContent = words[currentIndex];
+      }
+      function nextPracticeWord() {
+        if (words.length === 0) return;
+        currentIndex = (currentIndex + 1) % words.length;
+        document.getElementById('practiceWord').textContent = words[currentIndex];
+      }
+      function speakWord() {
+        if (words.length === 0) return;
+        const word = words[currentIndex];
+        const utter = new SpeechSynthesisUtterance(word);
+        window.speechSynthesis.speak(utter);
+      }
+      function initDictationMode() {
+        if (words.length === 0) {
+          document.getElementById('dictationWord').textContent = 'Add words to start!';
+          return;
+        }
+        currentIndex = Math.floor(Math.random() * words.length);
+        document.getElementById('dictationWord').textContent = 'Ready?';
+        document.getElementById('spellingInput').value = '';
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('hintSection').style.display = 'none';
+      }
+      function hearWord() {
+        if (words.length === 0) return;
+        const word = words[currentIndex];
+        const utter = new SpeechSynthesisUtterance(word);
+        window.speechSynthesis.speak(utter);
+      }
+      function checkSpelling() {
+        if (words.length === 0) return;
+        const input = document.getElementById('spellingInput').value.trim().toLowerCase();
+        const word = words[currentIndex].toLowerCase();
+        scores.total++;
+        if (input === word) {
+          scores.correct++;
+          scores.streak++;
+          document.getElementById('feedback').textContent = 'Correct! 🎉';
+          document.getElementById('feedback').className = 'feedback correct';
+          showCelebration();
+          if (scores.streak % 5 === 0) scores.level++;
+        } else {
+          scores.streak = 0;
+          document.getElementById('feedback').textContent = `Oops! The correct spelling is "${words[currentIndex]}"`;
+          document.getElementById('feedback').className = 'feedback incorrect';
+        }
+        updateScores();
+        saveData();
+      }
+      function getHint() {
+        if (words.length === 0) return;
+        const word = words[currentIndex];
+        if (word.length <= 2) {
+          document.getElementById('hintText').textContent = `Hint: ${word}`;
+        } else {
+          const hint = word[0] + ' ' + '_ '.repeat(word.length - 2) + word[word.length - 1];
+          document.getElementById('hintText').textContent = `Hint: ${hint}`;
+        }
+        document.getElementById('hintSection').style.display = 'block';
+      }
+      function nextDictation() {
+        if (words.length === 0) return;
+        currentIndex = Math.floor(Math.random() * words.length);
+        document.getElementById('dictationWord').textContent = 'Ready?';
+        document.getElementById('spellingInput').value = '';
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('hintSection').style.display = 'none';
+      }
+      function initQuizMode() {
+        document.getElementById('quizWord').textContent = 'Get Ready!';
+        document.getElementById('quizInput').style.display = 'none';
+        document.getElementById('startQuizBtn').style.display = '';
+        document.getElementById('checkQuizBtn').style.display = 'none';
+        document.getElementById('nextQuizBtn').style.display = 'none';
+      }
+      function startQuiz() {
+        if (words.length === 0) return;
+        currentQuizWord = words[Math.floor(Math.random() * words.length)];
+        document.getElementById('quizWord').textContent = currentQuizWord;
+        document.getElementById('quizInput').value = '';
+        document.getElementById('quizInput').style.display = 'none';
+        document.getElementById('startQuizBtn').style.display = 'none';
+        setTimeout(() => {
+          document.getElementById('quizWord').textContent = 'Type the word!';
+          document.getElementById('quizInput').style.display = '';
+          document.getElementById('checkQuizBtn').style.display = '';
+          document.getElementById('nextQuizBtn').style.display = 'none';
+        }, 3000);
+      }
+      function checkQuizAnswer() {
+        const input = document.getElementById('quizInput').value.trim().toLowerCase();
+        const word = currentQuizWord.toLowerCase();
+        scores.total++;
+        if (input === word) {
+          scores.correct++;
+          scores.streak++;
+          document.getElementById('quizFeedback').textContent = 'Correct! 🎉';
+          document.getElementById('quizFeedback').className = 'feedback correct';
+          showCelebration();
+          if (scores.streak % 5 === 0) scores.level++;
+        } else {
+          scores.streak = 0;
+          document.getElementById('quizFeedback').textContent = `Oops! The correct word was "${currentQuizWord}"`;
+          document.getElementById('quizFeedback').className = 'feedback incorrect';
+        }
+        updateScores();
+        saveData();
+        document.getElementById('checkQuizBtn').style.display = 'none';
+        document.getElementById('nextQuizBtn').style.display = '';
+      }
+      function nextQuiz() {
+        startQuiz();
+        document.getElementById('quizFeedback').textContent = '';
+      }
+      function updateDisplay() {
+        document.getElementById('practiceMode').classList.toggle('hidden', currentMode !== 'practice');
+        document.getElementById('dictationMode').classList.toggle('hidden', currentMode !== 'dictation');
+        document.getElementById('quizMode').classList.toggle('hidden', currentMode !== 'quiz');
+        document.getElementById('mascot').textContent = currentMode === 'practice' ? '📚' : currentMode === 'dictation' ? '🎤' : '🧠';
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('quizFeedback').textContent = '';
+        document.getElementById('spellingInput').value = '';
+        document.getElementById('quizInput').value = '';
+      }
+      function updateScores() {
+        document.getElementById('correctScore').textContent = scores.correct;
+        document.getElementById('totalAttempts').textContent = scores.total;
+        document.getElementById('currentStreak').textContent = scores.streak;
+        document.getElementById('currentLevel').textContent = scores.level;
+      }
+      function updateWordList() {
+        const wordTags = document.getElementById('wordTags');
+        wordTags.innerHTML = '';
+        if (words.length === 0) {
+          wordTags.innerHTML = '<div class="no-words">No words added yet. Add some words above or click "Add Sample Words"!</div>';
+          return;
+        }
+        words.forEach(word => {
+          const tag = document.createElement('div');
+          tag.className = 'word-tag';
+          tag.textContent = word;
+          tag.onclick = () => {
+            document.getElementById('wordInput').value = word;
+          };
+          wordTags.appendChild(tag);
+        });
+      }
+      function playSound(type) {
+        // Optional: Add sound effects if you want
+      }
+      function showCelebration() {
+        const celebration = document.getElementById('celebration');
+        celebration.innerHTML = '';
+        for (let i = 0; i < 30; i++) {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = Math.random() * 100 + '%';
+          confetti.style.background = `hsl(${Math.random() * 360}, 80%, 60%)`;
+          confetti.style.animationDelay = (Math.random() * 2) + 's';
+          celebration.appendChild(confetti);
+        }
+        setTimeout(() => { celebration.innerHTML = ''; }, 2000);
+      }
 
       // Event listeners
       document.addEventListener('DOMContentLoaded', function() {
