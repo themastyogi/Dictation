@@ -1051,9 +1051,15 @@
           });
         }
 
-        // Minimal working dropdown logic at the very end of the script
+        // Robust user menu dropdown and menu actions
         const userMenuBtn = document.getElementById('userMenuBtn');
         const userMenuDropdown = document.getElementById('userMenuDropdown');
+        const menuAdminDashboard = document.getElementById('menuAdminDashboard');
+        const menuMyProfile = document.getElementById('menuMyProfile');
+        const menuSignOut = document.getElementById('menuSignOut');
+        const adminBtn2 = document.getElementById('adminDashboardBtn');
+
+        // Dropdown open/close logic
         if (userMenuBtn && userMenuDropdown) {
           userMenuBtn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1064,6 +1070,33 @@
           });
           document.addEventListener('click', function() {
             userMenuDropdown.style.display = 'none';
+          });
+        }
+
+        // Menu actions
+        if (menuMyProfile) {
+          menuMyProfile.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+            if (typeof openProfileModalWithCurrentData === 'function') {
+              openProfileModalWithCurrentData();
+            }
+          });
+        }
+        if (menuSignOut) {
+          menuSignOut.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+            if (typeof auth !== 'undefined') {
+              auth.signOut();
+            }
+          });
+        }
+        if (menuAdminDashboard && adminBtn2) {
+          menuAdminDashboard.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+            adminBtn2.click();
           });
         }
       });
