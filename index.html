@@ -636,10 +636,13 @@
           loadData();
           checkAndShowProfileModal();
           // Show admin dashboard button if admin
-          if (user.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2") {
-            document.getElementById('adminDashboardBtn').style.display = '';
-          } else {
-            document.getElementById('adminDashboardBtn').style.display = 'none';
+          const adminBtn = document.getElementById('adminDashboardBtn');
+          if (adminBtn) {
+            if (user.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2") {
+              adminBtn.style.display = '';
+            } else {
+              adminBtn.style.display = 'none';
+            }
           }
         } else {
           words = [];
@@ -647,7 +650,8 @@
           updateWordList();
           updateDisplay();
           updateScores();
-          document.getElementById('adminDashboardBtn').style.display = 'none';
+          const adminBtn = document.getElementById('adminDashboardBtn');
+          if (adminBtn) adminBtn.style.display = 'none';
         }
       });
 
@@ -661,20 +665,22 @@
           db.collection('userData').doc(currentUser.uid).get().then(docSnap => {
             const data = docSnap.data() || {};
             let displayName = data.profileName || currentUser.displayName || currentUser.email || 'User';
-            userMenuBtn.textContent = displayName;
+            if (userMenuBtn) userMenuBtn.textContent = displayName;
           });
-          loginBtn.style.display = 'none';
-          userMenuBtn.style.display = '';
+          if (loginBtn) loginBtn.style.display = 'none';
+          if (userMenuBtn) userMenuBtn.style.display = '';
           // Show admin dashboard in menu if admin
-          if (currentUser.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2") {
-            menuAdminDashboard.style.display = '';
-          } else {
-            menuAdminDashboard.style.display = 'none';
+          if (menuAdminDashboard) {
+            if (currentUser.uid === "HTLec7hdXFM51uEe4aLm0Plw9gH2") {
+              menuAdminDashboard.style.display = '';
+            } else {
+              menuAdminDashboard.style.display = 'none';
+            }
           }
         } else {
-          loginBtn.style.display = '';
-          userMenuBtn.style.display = 'none';
-          userMenuDropdown.style.display = 'none';
+          if (loginBtn) loginBtn.style.display = '';
+          if (userMenuBtn) userMenuBtn.style.display = 'none';
+          if (userMenuDropdown) userMenuDropdown.style.display = 'none';
         }
       }
 
@@ -972,9 +978,9 @@
             const profileAge = document.getElementById('profileAge').value.trim();
             const profileClass = document.getElementById('profileClass').value;
             let profileAvatar = '';
-            if (document.getElementById('avatarBoy').checked) profileAvatar = 'boy';
-            if (document.getElementById('avatarGirl').checked) profileAvatar = 'girl';
-            if (document.getElementById('avatarOther').checked) profileAvatar = 'other';
+            if (document.getElementById('avatarBoy')) profileAvatar = 'boy';
+            if (document.getElementById('avatarGirl')) profileAvatar = 'girl';
+            if (document.getElementById('avatarOther')) profileAvatar = 'other';
             if (!profileAvatar) {
               alert('Please select an avatar.');
               return;
